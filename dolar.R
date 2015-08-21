@@ -2,7 +2,7 @@
 # Para revisar cuáles paquetes están instalados se emplea el comando library()
 
 install.packages(c("xlsx","tseries","plyr","dplyr",
-"forecast","hts","phtt","tseries","TSA","urca","fArma"))
+"forecast","hts","phtt","tseries","TSA","urca","fArma","pdR"))
 
 library(lattice)
 library(xlsx)
@@ -16,11 +16,14 @@ library(TSA)
 library(urca)
 library(fArma)
 library(HH) # Está incorporada
+library(pdR)
 
 #Lectura de Datos:
-
+# Excel:
 dolar=read.xlsx("seriedolar.xlsx",sheetName="mensual",
         colIndex=1:3)
+# Texto plano
+dolar<-read.table("dolarmensual.txt",header=T,sep="\t",dec=",")
 
 # Visualizamos la base de datos para saber dónde empiezan las series:
 head(dolar)	# Note que la serie hace referencia a la TRM promedio en el mes
@@ -189,4 +192,53 @@ plot(res)
 	# Entre estaciones: ARs=0 MAs=0,1,2
 
 # ¿Es posible realizar alguna prueba de raíz para las estaciones?
-# R tiene un procesdimiento para ello.
+# R tiene un procedimiento para ello.
+
+hegytest<-HEGY.test(wts=y, itsd=c(1,0,c(1:3)),regvar=0, 
+selectlags=list(mode="aic", Pmax=12))
+
+hegytest$stats
+
+	# Sólo se observa una raiz unitaria lo que sugiere que d=1 y D=0
+	# Se probará con modelos D=0,1
+
+## En resumen, se tienen los siguientes modelos para probar:
+	# AR = 1,2
+	# MA = 2,10
+	# ARs=0
+	# MAs=0,1,2
+	# d=1 D=0,1
+	# ¿Cuántos modelos se pueden probar?
+
+# Revisemos más opciones del test de raíz unitaria:
+
+lc.df1 <- ur.df(y=y1, lags=3, type='trend')
+summary(lc.df1)
+lc.df2 <- ur.df(y=y1, lags=3, type='none')
+summary(lc.df2)
+lc.df3 <- ur.df(y=y1, lags=3, type='drift')
+summary(lc.df3)
+
+# DF sugiere reíz unitaria con drift
+
+# Modelemos:
+m1<-arima(y1,order=c(1,1,2), seasonal = list(order = c(0,0,1 ), period = 12))
+Box.test(residuals(m1), lag = 12, type = c("Ljung-Box"), fitdf = 0)
+	# ¿Son los residuos Ruido Blanco?
+
+m2<-arima(y1,order=c(2,1,2), seasonal = list(order = c(0,0,2 ), period = 12))
+Box.test(residuals(m2), lag = 12, type = c("Ljung-Box"), fitdf = 0)
+	# ¿Son los residuos Ruido Blanco?
+
+m3<-arima(y1,order=c(2,1,2), seasonal = list(order = c(0,1,2 ), period = 12))
+Box.test(residuals(m3), lag = 12, type = c("Ljung-Box"), fitdf = 0)
+
+# Como el test DF sugiere que la serie tiene raíz unitaria tiene 'drift'
+# es decir 'media diferente de cero', necesitamos emplear la función Arima
+
+m4<-Arima(y1,order=c(2,1,2), seasonal = list(order = c(0,0,2 ), period = 12),include.drift=TRUE)
+Box.test(residuals(m4), lag = 12, type = c("Ljung-Box"), fitdf = 0)
+
+# Algunas predicciones con el modelo:
+form4<-forecast(m4,level=c(95),h=12)
+plot(form4)
