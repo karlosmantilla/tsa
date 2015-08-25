@@ -1,5 +1,5 @@
 # ANÁLISIS DE SERIES DE TIEMPO
-Conjunto de Sintaxis básicas en R para modelamiento de series de tiempo según el caso:
+# Conjunto de Sintaxis básicas en R para modelamiento de series de tiempo según el caso:
 1. Modelos MA
 2. Modelos AR
 3. Modelos ARMA
