@@ -8,4 +8,4 @@
 6. Modelos SARIMA
 7. Modelos con Intervención
 
-Serie mensual para la Tasa Representativa del Mercado registrada desde enero de 1950
+**** Serie mensual para la Tasa Representativa del Mercado registrada desde enero de 1950
