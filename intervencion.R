@@ -23,7 +23,7 @@ library(pdR)
 dolar=read.xlsx("seriedolar.xlsx",sheetName="mensual",
         colIndex=1:3)
 # Texto plano
-dolar<-read.table("dolarmensual.txt",header=T,sep="\t",dec=",")
+dolar<-read.table("dolarmes.txt",header=T,sep="\t",dec=",")
 
 
 #GRAFICO SERIE
@@ -151,21 +151,3 @@ hist(r3)
 qqnorm(r3)
 qqline(r3)
 par(mfrow=c(1,1))
-
-
-##NUEVOS PUNTOS OUTLIERS
-
-Sep02=1*(seq(y)==81); Dic03=1*(seq(y)==96)
-
-out2=data.frame(Dic96,Ene98,Sep02,Dic02,Dic03)
-
-aire.m3 = arimax(ly,order=c(0,1,1),seasonal=list(order=c(0,1,1),period=12),
-xtransf=data.frame(I911),transfer=list(c(1,0)), xreg=out2, method='ML')
-
-aire.m3
-pred3=fitted(aire.m3)
-plot(ly,ylab='LogY',col="red"); points(pred3); lines(pred3,col="blue")
-tsdiag(aire.m3)
-
-
-
