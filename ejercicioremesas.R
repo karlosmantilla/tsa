@@ -1,3 +1,23 @@
+# Crear las funciones para observar las tendencias:
+t=seq(1:100)
+t2=t^2
+b0=1
+b1=1
+b2=1
+par(mfrow=c(2,2))
+# b1,b2>0
+plot(t,b0+b1*t+b2*t2, type="l")
+# b1,b2>0
+plot(t,b0+(-b1)*t+(-b2)*t2, type="l")
+# b1>,b2<0
+plot(t,b0+b1*t+(-b2)*t2, type="l")
+# b1<,b2>0
+plot(t,b0+(-b1)*t+b2*t2, type="l")
+par(mfrow=c(1,1))
+
+#####################################
+
+library(TSA)
 library(tseries)
 # Ejercicio Remesas:
 # Leer los datos
@@ -20,7 +40,7 @@ plot(fechas,y, main="Remesas", xaxt="n", panel.first = grid(),type="l",ylab="rem
 axis.Date(1, at=ejex.mes, format="%m/%y")
 axis.Date(1, at=ejex.año, labels = FALSE, tcl = 0.2)
 
-# Generar datos para validacion cruzada: dejar el ultimo a˜no
+# Generar datos para validacion cruzada: dejar el ultimo año
 T = length(y)
 yi = y[1:(T-12)]
 yf = y[(T-12+1):T]
@@ -52,3 +72,53 @@ data=Ds,
 start=list(beta0=b0.est, beta1=b1.est))
 # paso 5) resultados
 summary(mod.exp)
+
+medidas = function(m,y,k){
+# y = serie, m = modelo, k = numero parametros
+T = length(y)
+yest = fitted(m)
+sse = sum((yest-y)^2)
+ssr = sum((y-mean(y))^2)
+mse = sse/(T-k)
+R2 = 1-sse/ssr
+Ra2 = 1-(T-1)*(1-R2)/(T-k)
+aic = log((T-k)*exp(2*k/T)*mse/T)
+bic = log(T^(k/T)*(T-k)*mse/T)
+M = c(Ra2, mse, aic, bic)
+names(M) = c("R2ajus","MSE","logAIC","logBIC")
+return(M)}
+
+M.lin = medidas(mod.lin,yi,2)
+M.cuad = medidas(mod.cuad,yi,3)
+M.cub = medidas(mod.cub,yi,4)
+M.exp = medidas(mod.exp,yi,2)
+M = cbind(M.lin,M.cuad,M.cub,M.exp)
+(M)
+
+
+# Chequeo de las Hipótesis del Modelo de Regresión
+
+r = mod.cuad$residuals
+par(mfrow=c(2,2))
+plot(t,r,type="o",ylab="residuo")
+abline(h=0,lty=2)
+plot(density(r),xlab="x",main= "",ylab="Densidad")
+qqnorm(r)
+qqline(r,col=2)
+acf(r,ci.type="ma",60)
+par(mfrow=c(1,1))
+
+# Pronósticos sobre la tendencia:
+tt = seq(164,175,1)
+tt2 = tt^2
+pr2 = predict(mod.cuad,data.frame(t=tt,t2=tt2))
+plot(tt,yf,type="b")
+lines(tt,pr2,col="red")
+
+# ¿Son confiables los pronósticos en el corto plazo?
+
+# Modelo para Componente Estacional
+
+mes=season(y)
+modeloest=lm(y~mes)
+summary(modeloest)
