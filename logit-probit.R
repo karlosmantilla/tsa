@@ -101,8 +101,6 @@ newdata3 <- within(newdata3, {
 
 head(newdata3)
 
-
-
 library(ggplot2)
 
 ggplot(newdata1, aes(x = newdata3$aportes, y = newdata3$PredictedProb)) + geom_ribbon(aes(ymin = newdata3$LL,
