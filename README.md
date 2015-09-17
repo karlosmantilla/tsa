@@ -12,7 +12,7 @@
 
 8. Modelos Logit y Probit
  
-# Bases de datos:
-### ocupados.txt
-### desocupado.txt
-### personas
+** Bases de datos:**
+* ocupados.txt
+* desocupado.txt
+* personas
