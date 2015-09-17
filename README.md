@@ -9,3 +9,10 @@
 7. Modelos con Intervención
 
 **Serie mensual para la Tasa Representativa del Mercado registrada desde enero de 1950** (Archivo dolarmes.txt)
+
+8. Modelos Logit y Probit
+ 
+# Bases de datos:
+### ocupados.txt
+### desocupado.txt
+### personas
