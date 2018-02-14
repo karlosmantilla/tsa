@@ -3,10 +3,9 @@
 
 ## Datos usados
 
-Se va a analizar el efecto que puede tener en el proceso de admisión a un curso de posgrado variables como el prestigio del centro educativo de pregrado (rank), el promedio académico (gpa) y la puntuación en el examen de graduación (gre). Los datos son tomados de https://stats.idre.ucla.edu
+Se va a analizar el efecto que puede tener en el proceso de admisión a un curso de posgrado variables como el prestigio del centro educativo de pregrado (rank), el promedio académico (gpa) y la puntuación en el examen de graduación (gre). Los datos y el ejemplo son tomados de https://stats.idre.ucla.edu
 
 Para la estimación de los modelos se emplearán las librerías aod (para algunos test) y ggplot2 (gráficas):
-
 
 ```R
 library(aod)
@@ -21,7 +20,6 @@ mydata <- read.csv("https://stats.idre.ucla.edu/stat/data/binary.csv")
 head(mydata)
 ```
 
-
 <table>
 <thead><tr><th scope=col>admit</th><th scope=col>gre</th><th scope=col>gpa</th><th scope=col>rank</th></tr></thead>
 <tbody>
@@ -34,10 +32,7 @@ head(mydata)
 </tbody>
 </table>
 
-
-
 La variable 'admit' es la variable respuesta. Como se observa es binaria. La variable 'rank' es una variable categórica de 4 niveles. El resumen numérico de los datos es el siguiente:
-
 
 ```R
 summary(mydata)
@@ -52,14 +47,11 @@ summary(mydata)
      3rd Qu.:1.0000   3rd Qu.:660.0   3rd Qu.:3.670   3rd Qu.:3.000  
      Max.   :1.0000   Max.   :800.0   Max.   :4.000   Max.   :4.000  
 
-
 Podemos calcular, también, la desviación estándar para cada variable (ya se discutirá la pertinencia o no de hacerlo para variables categóricas):
-
 
 ```R
 sapply(mydata, sd)
 ```
-
 
 <dl class=dl-horizontal>
 	<dt>admit</dt>
@@ -72,32 +64,30 @@ sapply(mydata, sd)
 		<dd>0.944460169902007</dd>
 </dl>
 
-
-
 Como la variable 'rank' es categórica, lo conveniente es construir una tabla de contingencia de doble entrada para analizar frecuencias:
 
-
 ```R
-xtabs(~admit + rank, data = mydata)
+xtabs(~rank + admit, data = mydata)
 ```
 
 
-         rank
-    admit  1  2  3  4
-        0 28 97 93 55
-        1 33 54 28 12
+        admit
+    rank  0  1
+       1 28 33
+       2 97 54
+       3 93 28
+       4 55 12
 
 
 ## Modelo Logit
 
+Para la estimación del modelo se emplean el modelo lineal generalizado. Debido a la naturaleza de la variable respuesta, la regresión se construye a partir de la familia de distribución _binomial_.
 
 ```R
 mydata$rank <- factor(mydata$rank)
 mylogit <- glm(admit ~ gre + gpa + rank, data = mydata, family = "binomial")
 summary(mylogit)
 ```
-
-
     
     Call:
     glm(formula = admit ~ gre + gpa + rank, family = "binomial", 
@@ -126,8 +116,7 @@ summary(mylogit)
     
     Number of Fisher Scoring iterations: 4
     
-
-
+En los resultados se observa la significancia de los coeficientes del modelo. Hay que tener en cuenta que la interpretación de la variable categórica difiere respecto a la interpretación en un modelo de regresión por mínimos cuadrados. Se puede, tambier, estimar los intervalos de confianza:
 
 ```R
 confint(mylogit)
@@ -135,8 +124,6 @@ confint(mylogit)
 
     Waiting for profiling to be done...
     
-
-
 <table>
 <thead><tr><th></th><th scope=col>2.5 %</th><th scope=col>97.5 %</th></tr></thead>
 <tbody>
@@ -149,13 +136,9 @@ confint(mylogit)
 </tbody>
 </table>
 
-
-
-
 ```R
 confint.default(mylogit)
 ```
-
 
 <table>
 <thead><tr><th></th><th scope=col>2.5 %</th><th scope=col>97.5 %</th></tr></thead>
@@ -169,13 +152,11 @@ confint.default(mylogit)
 </tbody>
 </table>
 
-
-
+Hay que tener en cuenta que la variable dependiente es dicotómica por lo que para validar adecuadamente la dependencia con la variable independiente categórica se requiere realizar un test de independencia:
 
 ```R
 wald.test(b = coef(mylogit), Sigma = vcov(mylogit), Terms = 4:6)
 ```
-
 
     Wald test:
     ----------
@@ -183,6 +164,10 @@ wald.test(b = coef(mylogit), Sigma = vcov(mylogit), Terms = 4:6)
     Chi-squared test:
     X2 = 20.9, df = 3, P(> X2) = 0.00011
 
+
+Que sugiere que el factor _'rank'_ es determinante en el proceso de admisión.
+
+También se puede evaluar las diferencias en los coeficientes para los diferentes niveles de la variable categórica
 
 
 ```R
@@ -198,6 +183,7 @@ wald.test(b = coef(mylogit), Sigma = vcov(mylogit), L = l)
     X2 = 5.5, df = 1, P(> X2) = 0.019
 
 
+También, se pueden estimar los coeficientes como _ODD-Ratios_ (razón de probabilidades o razón de oportunidades):
 
 ```R
 exp(coef(mylogit))
@@ -219,17 +205,12 @@ exp(coef(mylogit))
 		<dd>0.211937538610399</dd>
 </dl>
 
-
-
-
 ```R
 exp(cbind(OR = coef(mylogit), confint(mylogit)))
 ```
 
     Waiting for profiling to be done...
-    
-
-
+   
 <table>
 <thead><tr><th></th><th scope=col>OR</th><th scope=col>2.5 %</th><th scope=col>97.5 %</th></tr></thead>
 <tbody>
@@ -242,14 +223,12 @@ exp(cbind(OR = coef(mylogit), confint(mylogit)))
 </tbody>
 </table>
 
-
-
+Los siguientes pasos permiten estimar nuevas observaciones
 
 ```R
 newdata1 <- with(mydata, data.frame(gre = mean(gre), gpa = mean(gpa), rank = factor(1:4)))
 newdata1
 ```
-
 
 <table>
 <thead><tr><th scope=col>gre</th><th scope=col>gpa</th><th scope=col>rank</th></tr></thead>
@@ -261,14 +240,10 @@ newdata1
 </tbody>
 </table>
 
-
-
-
 ```R
 newdata1$rankP <- predict(mylogit, newdata = newdata1, type = "response")
 newdata1
 ```
-
 
 <table>
 <thead><tr><th scope=col>gre</th><th scope=col>gpa</th><th scope=col>rank</th><th scope=col>rankP</th></tr></thead>
@@ -280,14 +255,10 @@ newdata1
 </tbody>
 </table>
 
-
-
-
 ```R
 newdata2 <- with(mydata, data.frame(gre = rep(seq(from = 200, to = 800, length.out = 100),
     4), gpa = mean(gpa), rank = factor(rep(1:4, each = 100))))
 ```
-
 
 ```R
 newdata3 <- cbind(newdata2, predict(mylogit, newdata = newdata2, type = "link",
@@ -299,8 +270,6 @@ newdata3 <- within(newdata3, {
 })
 head(newdata3)
 ```
-
-
 <table>
 <thead><tr><th scope=col>gre</th><th scope=col>gpa</th><th scope=col>rank</th><th scope=col>fit</th><th scope=col>se.fit</th><th scope=col>residual.scale</th><th scope=col>UL</th><th scope=col>LL</th><th scope=col>PredictedProb</th></tr></thead>
 <tbody>
@@ -313,53 +282,168 @@ head(newdata3)
 </tbody>
 </table>
 
-
-
-
 ```R
 ggplot(newdata3, aes(x = gre, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
     ymax = UL, fill = rank), alpha = 0.2) + geom_line(aes(colour = rank),
     size = 1)
 ```
 
+![png](output_30_1.png)
 
-
-
-![png](output_24_1.png)
-
-
+Para poder comparar el modelo con otros es necesario construir algunos estadísticos de prueba. Los siguientes resultados permiten comparar el modelo con un modelo nulo y, a su vez, con otro tipo de modelo como el probit:
 
 ```R
 with(mylogit, null.deviance - deviance)
 ```
-
-
 41.4590250790164
-
-
 
 ```R
 with(mylogit, df.null - df.residual)
 ```
-
-
 5
-
-
 
 ```R
 with(mylogit, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
 ```
 
-
 7.57819423181525e-08
-
-
 
 ```R
 logLik(mylogit)
 ```
 
-
     'log Lik.' -229.2587 (df=6)
+
+
+## Modelo Probit
+
+Las siguientes líneas corresponden al modelo probit. Ya que su implementación tiene el mismo objetivo que el probit la interpretación sigue los mismos lineamientos. Por lo tanto, sólo se comparte la sintaxis:
+
+
+```R
+myprobit <- glm(admit ~ gre + gpa + rank, family = binomial(link = "probit"), 
+    data = mydata)
+summary(myprobit)
+```
+
+   
+    Call:
+    glm(formula = admit ~ gre + gpa + rank, family = binomial(link = "probit"), 
+        data = mydata)
+    
+    Deviance Residuals: 
+        Min       1Q   Median       3Q      Max  
+    -1.6163  -0.8710  -0.6389   1.1560   2.1035  
+    
+    Coefficients:
+                 Estimate Std. Error z value Pr(>|z|)    
+    (Intercept) -2.386836   0.673946  -3.542 0.000398 ***
+    gre          0.001376   0.000650   2.116 0.034329 *  
+    gpa          0.477730   0.197197   2.423 0.015410 *  
+    rank2       -0.415399   0.194977  -2.131 0.033130 *  
+    rank3       -0.812138   0.208358  -3.898 9.71e-05 ***
+    rank4       -0.935899   0.245272  -3.816 0.000136 ***
+    ---
+    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    
+    (Dispersion parameter for binomial family taken to be 1)
+    
+        Null deviance: 499.98  on 399  degrees of freedom
+    Residual deviance: 458.41  on 394  degrees of freedom
+    AIC: 470.41
+    
+    Number of Fisher Scoring iterations: 4
+    
+```R
+confint(myprobit)
+```
+
+    Waiting for profiling to be done...
+    
+<table>
+<thead><tr><th></th><th scope=col>2.5 %</th><th scope=col>97.5 %</th></tr></thead>
+<tbody>
+	<tr><th scope=row>(Intercept)</th><td>-3.7201050682</td><td>-1.076327713 </td></tr>
+	<tr><th scope=row>gre</th><td> 0.0001104101</td><td> 0.002655157 </td></tr>
+	<tr><th scope=row>gpa</th><td> 0.0960654793</td><td> 0.862610221 </td></tr>
+	<tr><th scope=row>rank2</th><td>-0.7992113929</td><td>-0.032995019 </td></tr>
+	<tr><th scope=row>rank3</th><td>-1.2230955861</td><td>-0.405008112 </td></tr>
+	<tr><th scope=row>rank4</th><td>-1.4234218227</td><td>-0.459538829 </td></tr>
+</tbody>
+</table>
+
+```R
+wald.test(b = coef(myprobit), Sigma = vcov(myprobit), Terms = 4:6)
+```
+
+
+    Wald test:
+    ----------
+    
+    Chi-squared test:
+    X2 = 21.4, df = 3, P(> X2) = 8.9e-05
+
+
+
+```R
+l <- cbind(0, 0, 0, 1, -1, 0)
+wald.test(b = coef(myprobit), Sigma = vcov(myprobit), L = l)
+```
+
+
+    Wald test:
+    ----------
+    
+    Chi-squared test:
+    X2 = 5.6, df = 1, P(> X2) = 0.018
+
+
+
+```R
+newdata <- data.frame(gre = rep(seq(from = 200, to = 800, length.out = 100), 
+    4 * 4), gpa = rep(c(2.5, 3, 3.5, 4), each = 100 * 4), rank = factor(rep(rep(1:4, 
+    each = 100), 4)))
+head(newdata)
+```
+
+
+<table>
+<thead><tr><th scope=col>gre</th><th scope=col>gpa</th><th scope=col>rank</th></tr></thead>
+<tbody>
+	<tr><td>200.0000</td><td>2.5     </td><td>1       </td></tr>
+	<tr><td>206.0606</td><td>2.5     </td><td>1       </td></tr>
+	<tr><td>212.1212</td><td>2.5     </td><td>1       </td></tr>
+	<tr><td>218.1818</td><td>2.5     </td><td>1       </td></tr>
+	<tr><td>224.2424</td><td>2.5     </td><td>1       </td></tr>
+	<tr><td>230.3030</td><td>2.5     </td><td>1       </td></tr>
+</tbody>
+</table>
+
+```R
+newdata[, c("p", "se")] <- predict(myprobit, newdata, type = "response", se.fit = TRUE)[-3]
+ggplot(newdata, aes(x = gre, y = p, colour = rank)) + geom_line() + facet_wrap(~gpa)
+```
+
+![png](output_43_1.png)
+
+```R
+with(myprobit, null.deviance - deviance)
+```
+41.5633461847304
+
+```R
+with(myprobit, df.null - df.residual)
+```
+5
+
+```R
+with(myprobit, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
+```
+7.21893207520256e-08
+
+```R
+logLik(myprobit)
+```
+
+    'log Lik.' -229.2066 (df=6)
 
